@@ -9,109 +9,251 @@ use machxo2.all;
 
 
 ENTITY top IS
-   PORT (
-        -- FTDI Channel A, used normally as JTAG/MPSSE
-		--ADBUS0         		: IN std_logic;   -- ADBUS0 M_TCK
-		--ADBUS1	       		: OUT std_logic;   -- ADBUS1 M_TDI
-		--M_TDO         		: OUT std_logic;  -- ADBUS2
-		--M_TMS         		: IN std_logic;   -- ADBUS3
-	    --CLK	 		    	: IN std_logic;
-		
-		SCAN_OUT			: OUT std_logic_vector(9 downto 0);
-		SCAN_IN		    	: IN std_logic_vector(7 downto 0);
-		
-		
-		KEY_RESTORE	    	: IN std_logic;
-		
-		LED_R0           	: OUT std_logic;
-		LED_G0           	: OUT std_logic;
-		LED_B0           	: OUT std_logic;
-		
-		LED_R1           	: OUT std_logic;
-		LED_G1           	: OUT std_logic;
-		LED_B1           	: OUT std_logic;
-		
-		LED_R2           	: OUT std_logic;
-		LED_G2           	: OUT std_logic;
-		LED_B2           	: OUT std_logic;
-		
-		LED_R3           	: OUT std_logic;
-		LED_G3           	: OUT std_logic;
-		LED_B3           	: OUT std_logic;
-
-		LED_SHIFT           : OUT std_logic;
-		LED_CAPS            : OUT std_logic
-      );
+  PORT (
+    -- JTAG / Xilinx main FPGA communications channel
+    TDO         		: OUT std_logic;
+    TDI         		: IN std_logic;
+    TMS         		: IN std_logic; 
+    TCK	 		    	: IN std_logic;
+    
+    SCAN_OUT			: OUT std_logic_vector(9 downto 0);
+    SCAN_IN		    	: IN std_logic_vector(7 downto 0);
+    
+    
+    KEY_RESTORE	    	: IN std_logic;
+    
+    LED_R0           	: OUT std_logic;
+    LED_G0           	: OUT std_logic;
+    LED_B0           	: OUT std_logic;
+    
+    LED_R1           	: OUT std_logic;
+    LED_G1           	: OUT std_logic;
+    LED_B1           	: OUT std_logic;
+    
+    LED_R2           	: OUT std_logic;
+    LED_G2           	: OUT std_logic;
+    LED_B2           	: OUT std_logic;
+    
+    LED_R3           	: OUT std_logic;
+    LED_G3           	: OUT std_logic;
+    LED_B3           	: OUT std_logic;
+    
+    LED_SHIFT           : OUT std_logic;
+    LED_CAPS            : OUT std_logic
+    );
 END ENTITY top;
 --
 ARCHITECTURE translated OF top IS
+  
+  --GENERIC (NOM_FREQ: string := "24.18");
+  
+  COMPONENT OSCH
+    -- synthesis translate_off
+    GENERIC (NOM_FREQ: string := "12.09");
+    -- synthesis translate_on
+    PORT ( STDBY :IN std_logic;
+           OSC :OUT std_logic;
+           SEDSTDBY :OUT std_logic);
+  END COMPONENT OSCH;
 
-	--GENERIC (NOM_FREQ: string := "24.18");
-	
-COMPONENT OSCH
-	-- synthesis translate_off
-	GENERIC (NOM_FREQ: string := "12.09");
-	-- synthesis translate_on
-	PORT ( STDBY :IN std_logic;
-	OSC :OUT std_logic;
-	SEDSTDBY :OUT std_logic);
-END COMPONENT OSCH;
-
-attribute NOM_FREQ : string;
-
+  attribute NOM_FREQ : string;
+  
 --attribute NOM_FREQ of OSCinst0 : label is "24.18";
-attribute NOM_FREQ of OSCinst0 : label is "12.09";
+  attribute NOM_FREQ of OSCinst0 : label is "12.09";
 
 
-signal osc_clk: std_logic;
-signal clk: std_logic;
-signal cnt: std_logic_vector(31 downto 0);
+  signal osc_clk: std_logic;
+  signal clk: std_logic;
+  signal cnt: std_logic_vector(31 downto 0);
+  
+  signal LED_Blink: std_logic;
 
-signal LED_Blink: std_logic;
+  signal last_TCK : std_logic := '0';
+  signal bit_number : integer range 0 to 255 := 0;
+  
+  -- The data we are currently shifting in or out serially
+  signal serial_data_in : std_logic_vector(127 downto 0);
+  signal serial_data_out : std_logic_vector(71 downto 0) := (others => '1');
 
+  signal scan_phase : integer range 0 to 15 := 0;
+  signal scan_out_internal : std_logic_vector(9 downto 0) := "0000000001";
+  -- 0 = key down, 1 = key not pressed
+  signal mega65_ordered_matrix : std_logic_vector(71 downto 0) := (others => '1');
+  -- Then the three keys that have their own dedicated lines
+  -- We have enough pins to give them their own dedicated pins, so we will.
+  signal key_left_internal : std_logic := '1';
+  signal key_up_internal : std_logic := '1';
+  signal key_restore_internal : std_logic := '1';  
 
+  -- Track state of shift lock and caps lock keys locally
+  -- (Again, 1 = not active, 0 = active)
+  signal caps_lock : std_logic := '1';
+  signal shift_lock  : std_logic := '1';
+  -- To do this, we need to know the last state of those keys
+  signal last_caps_lock_in : std_logic := '0';
+  signal last_shift_lock_in : std_logic := '0';
 
+  -- Info we read from the MEGA65.
+  -- 4x RGB leds with 8-bit brightness for each channel.
+  -- (With a 12MHz clock, 8 bit values = 12MHz/256 = 50KHz blink rate, which
+  -- should be ok).  4x3x8=96 bits
+  -- We'll make it 128 bits for simplicity, and a bit of expansion.
+  -- (The caps lock and shift lock LEDs are driven locally by us, so we don't
+  -- need to have data for those.)
+  signal mega65_control_data : std_logic_vector(127 downto 0);
+  
 
 BEGIN
+  
+  clk <= osc_clk;
+  
+  OSCInst0: OSCH
+                                        -- synthesis translate_off
+    GENERIC MAP ( NOM_FREQ => "12.09" )
+    
+                                        -- synthesis translate_on
+    PORT MAP (STDBY=> '0', OSC=> osc_clk, SEDSTDBY=> open);
+  
+  process(clk)
+  begin
+    if (rising_edge(clk)) then
+      cnt <= cnt + X"00000001";
 
-	LED_SHIFT 		<= cnt(22);
-	LED_CAPS  		<= cnt(23);
-	SCAN_OUT 		<= "0000000000";
+      if TMS='1' then
+        serial_data_out <= mega65_ordered_matrix;
+        bit_number <= 0;
+      else
+        if last_TCK = '0' and TCK = '1' then
+         -- Latch data on rising edge
+          if bit_number /= 255 then
+            bit_number <= bit_number + 1;
+          end if;
+          serial_data_in(127 downto 1) <= serial_data_in(126 downto 0);
+          serial_data_in(0) <= TDI;
+          if bit_number = 128 then
+            -- We have 128 bits of data, so latch the whole thing
+            mega65_control_data <= serial_data_in;
+          end if;
 
+          -- And push matrix data out
+          serial_data_out(70 downto 0) <= serial_data_out(71 downto 1);
+          serial_data_out(71) <= '1';
+          TDO <= serial_data_out(0);        
+        end if;
+      end if;
 
-	LED_R0		    <= SCAN_IN(0);
-	LED_G0		    <= SCAN_IN(1);
-	LED_B0		    <= SCAN_IN(2);
-	
-	LED_R1		    <= SCAN_IN(3);
-	LED_G1		    <= SCAN_IN(4);
-	LED_B1		    <= SCAN_IN(5);
-	
-	LED_R2		    <= SCAN_IN(6);
-	LED_G2		    <= SCAN_IN(7);
-	LED_B2		    <= '1';
+      -- Update PWM LED outputs
+      if cnt(7 downto 0) = x"00" then
+        LED_SHIFT <= shift_lock;
+        LED_CAPS <= caps_lock;
+        LED_R0 <= '1';
+        LED_G0 <= '1';
+        LED_B0 <= '1';
+        LED_R1 <= '1';
+        LED_G1 <= '1';
+        LED_B1 <= '1';
+        LED_R2 <= '1';
+        LED_G2 <= '1';
+        LED_B2 <= '1';
+        LED_R3 <= '1';
+        LED_G3 <= '1';
+        LED_B3 <= '1';
+      else
+        if cnt(7 downto 0) = mega65_control_data(7 downto 0) then
+          LED_R0 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(15 downto 8) then
+          LED_G0 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(23 downto 16) then
+          LED_B0 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(31 downto 24) then
+          LED_R1 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(39 downto 32) then
+          LED_G1 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(47 downto 40) then
+          LED_B1 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(55 downto 48) then
+          LED_R2 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(63 downto 56) then
+          LED_G2 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(71 downto 64) then
+          LED_B2 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(79 downto 72) then
+          LED_R3 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(87 downto 80) then
+          LED_G3 <= '0';
+        end if;
+        if cnt(7 downto 0) = mega65_control_data(95 downto 88) then
+          LED_B3 <= '0';
+        end if;
+      end if;
+      
+      -- Scan keyboard
+      if cnt(3 downto 0) = "0000" then
+        -- Rotate through scan sequence
+        if scan_phase < 9 then
+          scan_phase <= scan_phase + 1;
+          SCAN_OUT(9 downto 1) <= scan_out_internal(8 downto 0);
+          SCAN_OUT(0) <= scan_out_internal(9);
+          scan_out_internal(9 downto 1) <= scan_out_internal(8 downto 0);
+          scan_out_internal(0) <= scan_out_internal(9);
+        else
+          scan_phase <= 0;
+          SCAN_OUT <= "0000000001";
+          scan_out_internal <= "0000000001";
+        end if;        
+      end if;
+      if cnt(3 downto 0) = "1000" then
+        -- Read scan row after allowing time to settle.
+        -- We place the scanned keys directly into the MEGA65
+        -- matrix layout, so that we can easily clock it out
+        -- without further fiddling.
+--        shift_lock <= shift_lock and SCAN_IN(0);
+        case scan_phase is
+          when 0 =>
+            null;
+          when 1 =>
+            shift_lock <= SCAN_IN(0);
+            if SCAN_IN /= "11111111" then
+              caps_lock <= '0';
+            else
+              caps_lock <= '1';
+            end if;
+            null;
+          when 2 =>
+            null;
+          when 3 =>
+            null;
+          when 4 =>
+            null;
+          when 5 =>
+            null;
+          when 6 =>
+            null;
+          when 7 =>
+            null;
+          when 8 =>
+            null;
+          when 9 =>
+            null;
+          when others =>
+            null;
+        end case;
+      end if;
 
-	LED_R3		    <= KEY_RESTORE;
-	LED_G3		    <= KEY_RESTORE;
-	LED_B3		    <= KEY_RESTORE;
-		
-	
-	clk <= osc_clk;
-	
-OSCInst0: OSCH
-		-- synthesis translate_off
-		GENERIC MAP ( NOM_FREQ => "12.09" )
-		
-		-- synthesis translate_on
-		PORT MAP (STDBY=> '0', OSC=> osc_clk, SEDSTDBY=> open);
-
-process(clk)
-begin
-	if (rising_edge(clk)) then
-			cnt <= cnt + X"00000001";
-	end if;
-end process;
-
+      
+    end if;
+  end process;
+  
 
 
 END ARCHITECTURE translated;
