@@ -72,7 +72,7 @@ ARCHITECTURE translated OF top IS
   signal bit_number : integer range 0 to 255 := 0;
   
   -- The data we are currently shifting in or out serially
-  signal serial_data_in : std_logic_vector(127 downto 0) := x"0000000000000000000000FF0000FF";
+  signal serial_data_in : std_logic_vector(127 downto 0) := x"000000000000000000000000FF0000FF";
   signal serial_data_out : std_logic_vector(71 downto 0) := (others => '1');
 
   signal scan_phase : integer range 0 to 15 := 0;
@@ -89,11 +89,8 @@ ARCHITECTURE translated OF top IS
   -- (Again, 1 = not active, 0 = active)
   signal caps_lock : std_logic := '0';
   signal shift_lock  : std_logic := '0';
-  signal last_caps_lock : std_logic := '1';
-  signal last_shift_lock  : std_logic := '1';
-  -- To do this, we need to know the last state of those keys
-  signal last_caps_lock_in : std_logic := '0';
-  signal last_shift_lock_in : std_logic := '0';
+  signal last_caps_lock : std_logic_vector(7 downto 0);
+  signal last_shift_lock  : std_logic_vector(7 downto 0);
 
   -- Info we read from the MEGA65.
   -- 4x RGB leds with 8-bit brightness for each channel.
@@ -240,8 +237,9 @@ BEGIN
           when 4 =>
             null;
           when 5 =>
-            last_caps_lock <= SCAN_IN(0);
-            if (SCAN_IN(0)='0') and (last_caps_lock='1') then
+            last_caps_lock(0) <= SCAN_IN(0);
+            last_caps_lock(7 downto 1) <= last_caps_lock(6 downto 0);
+            if (SCAN_IN(0)='0') and (last_caps_lock=x"FF") then
               caps_lock <= not caps_lock;
             end if;
             null;
@@ -250,8 +248,9 @@ BEGIN
           when 7 =>
             null;
           when 8 =>
-            last_shift_lock <= SCAN_IN(3);
-            if (SCAN_IN(3)='0') and (last_shift_lock='1') then
+            last_shift_lock(0) <= SCAN_IN(3);
+            last_shift_lock(7 downto 1) <= last_shift_lock(6 downto 0);
+            if (SCAN_IN(3)='0') and (last_shift_lock=x"FF") then
               shift_lock <= not shift_lock;
             end if;
             null;
