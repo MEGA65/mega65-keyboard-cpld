@@ -72,7 +72,7 @@ ARCHITECTURE translated OF top IS
   signal bit_number : integer range 0 to 255 := 0;
   
   -- The data we are currently shifting in or out serially
-  signal serial_data_in : std_logic_vector(127 downto 0);
+  signal serial_data_in : std_logic_vector(127 downto 0) := x"0000000000000000000000FF0000FF";
   signal serial_data_out : std_logic_vector(71 downto 0) := (others => '1');
 
   signal scan_phase : integer range 0 to 15 := 0;
@@ -87,8 +87,10 @@ ARCHITECTURE translated OF top IS
 
   -- Track state of shift lock and caps lock keys locally
   -- (Again, 1 = not active, 0 = active)
-  signal caps_lock : std_logic := '1';
-  signal shift_lock  : std_logic := '1';
+  signal caps_lock : std_logic := '0';
+  signal shift_lock  : std_logic := '0';
+  signal last_caps_lock : std_logic := '1';
+  signal last_shift_lock  : std_logic := '1';
   -- To do this, we need to know the last state of those keys
   signal last_caps_lock_in : std_logic := '0';
   signal last_shift_lock_in : std_logic := '0';
@@ -198,7 +200,7 @@ BEGIN
       end if;
       
       -- Scan keyboard
-      if cnt(3 downto 0) = "0000" then
+      if cnt(4 downto 0) = "00000" then
         -- Rotate through scan sequence
         if scan_phase < 9 then
           scan_phase <= scan_phase + 1;
@@ -208,11 +210,11 @@ BEGIN
           scan_out_internal(0) <= scan_out_internal(9);
         else
           scan_phase <= 0;
-          SCAN_OUT <= "0000000001";
-          scan_out_internal <= "0000000001";
+          SCAN_OUT <= "1111111110";
+          scan_out_internal <= "1111111110";
         end if;        
       end if;
-      if cnt(3 downto 0) = "1000" then
+      if cnt(4 downto 0) = "10000" then
         -- Read scan row after allowing time to settle.
         -- We place the scanned keys directly into the MEGA65
         -- matrix layout, so that we can easily clock it out
@@ -222,26 +224,36 @@ BEGIN
           when 0 =>
             null;
           when 1 =>
-            shift_lock <= SCAN_IN(0);
-            if SCAN_IN /= "11111111" then
-              caps_lock <= '0';
-            else
-              caps_lock <= '1';
-            end if;
             null;
           when 2 =>
+            mega65_control_data(7) <= SCAN_IN(0);
+            mega65_control_data(15) <= SCAN_IN(1);
+            mega65_control_data(23) <= SCAN_IN(2);
+            mega65_control_data(31) <= SCAN_IN(3);
+            mega65_control_data(39) <= SCAN_IN(4);
+            mega65_control_data(47) <= SCAN_IN(5);
+            mega65_control_data(55) <= SCAN_IN(6);
+            mega65_control_data(63) <= SCAN_IN(7);            
             null;
           when 3 =>
             null;
           when 4 =>
             null;
           when 5 =>
+            last_caps_lock <= SCAN_IN(0);
+            if (SCAN_IN(0)='0') and (last_caps_lock='1') then
+              caps_lock <= not caps_lock;
+            end if;
             null;
           when 6 =>
             null;
           when 7 =>
             null;
           when 8 =>
+            last_shift_lock <= SCAN_IN(3);
+            if (SCAN_IN(3)='0') and (last_shift_lock='1') then
+              shift_lock <= not shift_lock;
+            end if;
             null;
           when 9 =>
             null;
