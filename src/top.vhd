@@ -13,13 +13,13 @@ ENTITY top IS
     -- JTAG / Xilinx main FPGA communications channel
     -- We can't easily figure out how to make these GPIOs safely, so we will
     -- switch instead to a 3-wire protocol on KIO8 -- KIO10.
-    TDO         		: OUT std_logic := '1';
-    TDI         		: IN std_logic;
-    TMS         		: IN std_logic; 
-    TCK	 		    	: IN std_logic;
+--    TDO         		: OUT std_logic := '1';
+--    TDI         		: IN std_logic;
+--    TMS         		: IN std_logic; 
+--    TCK	 		    	: IN std_logic;
 
-    KIO8 : out std_logic := '0';
-    KIO9 : out std_logic := '0';
+    KIO8 : in std_logic := '0';
+    KIO9 : in std_logic := '0';
     KIO10 : out std_logic := '0';
     
     SCAN_OUT			: OUT std_logic_vector(9 downto 0);
@@ -110,6 +110,8 @@ ARCHITECTURE translated OF top IS
   signal tms_count : unsigned(7 downto 0) := x"00";  
   signal loop_count : unsigned(7 downto 0) := x"00";  
 
+  signal clock_duration : integer range 0 to 31 := 0;
+  
 BEGIN
   
   clk <= osc_clk;
@@ -179,8 +181,8 @@ BEGIN
         LED_G3 <= '1';
         LED_B3 <= '1';
       else
---        if cnt(7 downto 0) = mega65_control_data(7 downto 0) then
-        if cnt(7 downto 0) = tms_count then
+        if cnt(7 downto 0) = mega65_control_data(7 downto 0) then
+--        if cnt(7 downto 0) = tms_count then
           LED_R0 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(15 downto 8) then
@@ -192,19 +194,19 @@ BEGIN
         if cnt(7 downto 0) = mega65_control_data(31 downto 24) then
           LED_R1 <= '0';
         end if;
---        if cnt(7 downto 0) = mega65_control_data(39 downto 32) then
-        if cnt(7 downto 0) = loop_count then
+        if cnt(7 downto 0) = mega65_control_data(39 downto 32) then
+--        if cnt(7 downto 0) = loop_count then
           LED_G1 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(47 downto 40) then
           LED_B1 <= '0';
         end if;
---        if cnt(7 downto 0) = mega65_control_data(55 downto 48) then
-        if clock_duration = 31 then
+        if cnt(7 downto 0) = mega65_control_data(55 downto 48) then
+--        if clock_duration = 31 then
           LED_R2 <= '0';
         end if;
---        if cnt(7 downto 0) = mega65_control_data(63 downto 56) then
-        if clock_duration /= 31 then
+        if cnt(7 downto 0) = mega65_control_data(63 downto 56) then
+--        if clock_duration /= 31 then
           LED_G2 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(71 downto 64) then
