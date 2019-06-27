@@ -11,10 +11,16 @@ use machxo2.all;
 ENTITY top IS
   PORT (
     -- JTAG / Xilinx main FPGA communications channel
-    TDO         		: OUT std_logic;
+    -- We can't easily figure out how to make these GPIOs safely, so we will
+    -- switch instead to a 3-wire protocol on KIO8 -- KIO10.
+    TDO         		: OUT std_logic := '1';
     TDI         		: IN std_logic;
     TMS         		: IN std_logic; 
     TCK	 		    	: IN std_logic;
+
+    KIO8 : out std_logic := '0';
+    KIO9 : out std_logic := '0';
+    KIO10 : out std_logic := '0';
     
     SCAN_OUT			: OUT std_logic_vector(9 downto 0);
     SCAN_IN		    	: IN std_logic_vector(7 downto 0);
@@ -25,7 +31,7 @@ ENTITY top IS
     LED_R0           	: OUT std_logic;
     LED_G0           	: OUT std_logic;
     LED_B0           	: OUT std_logic;
-    
+   
     LED_R1           	: OUT std_logic;
     LED_G1           	: OUT std_logic;
     LED_B1           	: OUT std_logic;
@@ -68,7 +74,7 @@ ARCHITECTURE translated OF top IS
   
   signal LED_Blink: std_logic;
 
-  signal last_TCK : std_logic := '0';
+  signal last_KIO8 : std_logic := '0';
   signal bit_number : integer range 0 to 255 := 0;
   
   -- The data we are currently shifting in or out serially
@@ -102,6 +108,7 @@ ARCHITECTURE translated OF top IS
   signal mega65_control_data : unsigned(127 downto 0);
 
   signal tms_count : unsigned(7 downto 0) := x"00";  
+  signal loop_count : unsigned(7 downto 0) := x"00";  
 
 BEGIN
   
@@ -113,24 +120,34 @@ BEGIN
     
                                         -- synthesis translate_on
     PORT MAP (STDBY=> '0', OSC=> osc_clk, SEDSTDBY=> open);
-  
+
   process(clk)
   begin
     if (rising_edge(clk)) then
       cnt <= cnt + X"00000001";
 
-      if TMS='1' then
+      last_KIO8 <= KIO8;
+
+      if KIO8='0' then
+        clock_duration <= 0;
+      else
+        if clock_duration < 31 then
+          clock_duration <= clock_duration + 1;
+        end if;
+      end if;
+      
+      if clock_duration = 31 then
         tms_count <= tms_count + 1;
         serial_data_out <= mega65_ordered_matrix;
         bit_number <= 0;
       else
-        if last_TCK = '0' and TCK = '1' then
+        if last_KIO8 = '0' and KIO8 = '1' then
          -- Latch data on rising edge
           if bit_number /= 255 then
             bit_number <= bit_number + 1;
           end if;
           serial_data_in(127 downto 1) <= serial_data_in(126 downto 0);
-          serial_data_in(0) <= TDI;
+          serial_data_in(0) <= KIO9;
           if bit_number = 128 then
             -- We have 128 bits of data, so latch the whole thing
             mega65_control_data <= serial_data_in;
@@ -139,12 +156,14 @@ BEGIN
           -- And push matrix data out
           serial_data_out(70 downto 0) <= serial_data_out(71 downto 1);
           serial_data_out(71) <= '1';
-          TDO <= serial_data_out(0);        
+          KIO10 <= serial_data_out(0);        
         end if;
       end if;
 
       -- Update PWM LED outputs
       if to_integer(cnt(7 downto 0)) = 0 then
+        loop_count <= loop_count + 1;
+        
         LED_SHIFT <= shift_lock;
         LED_CAPS <= caps_lock;
         LED_R0 <= '1';
@@ -173,16 +192,19 @@ BEGIN
         if cnt(7 downto 0) = mega65_control_data(31 downto 24) then
           LED_R1 <= '0';
         end if;
-        if cnt(7 downto 0) = mega65_control_data(39 downto 32) then
+--        if cnt(7 downto 0) = mega65_control_data(39 downto 32) then
+        if cnt(7 downto 0) = loop_count then
           LED_G1 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(47 downto 40) then
           LED_B1 <= '0';
         end if;
-        if cnt(7 downto 0) = mega65_control_data(55 downto 48) then
+--        if cnt(7 downto 0) = mega65_control_data(55 downto 48) then
+        if clock_duration = 31 then
           LED_R2 <= '0';
         end if;
-        if cnt(7 downto 0) = mega65_control_data(63 downto 56) then
+--        if cnt(7 downto 0) = mega65_control_data(63 downto 56) then
+        if clock_duration /= 31 then
           LED_G2 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(71 downto 64) then
