@@ -1,8 +1,8 @@
 --
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
 
 library machxo2;
 use machxo2.all;
@@ -64,7 +64,7 @@ ARCHITECTURE translated OF top IS
 
   signal osc_clk: std_logic;
   signal clk: std_logic;
-  signal cnt: std_logic_vector(31 downto 0);
+  signal cnt: unsigned(31 downto 0) := x"00000000";
   
   signal LED_Blink: std_logic;
 
@@ -72,7 +72,7 @@ ARCHITECTURE translated OF top IS
   signal bit_number : integer range 0 to 255 := 0;
   
   -- The data we are currently shifting in or out serially
-  signal serial_data_in : std_logic_vector(127 downto 0) := x"000000000000000000000000FF0000FF";
+  signal serial_data_in : unsigned(127 downto 0) := x"000000000000000000000000FF0000FF";
   signal serial_data_out : std_logic_vector(71 downto 0) := (others => '1');
 
   signal scan_phase : integer range 0 to 15 := 0;
@@ -99,8 +99,9 @@ ARCHITECTURE translated OF top IS
   -- We'll make it 128 bits for simplicity, and a bit of expansion.
   -- (The caps lock and shift lock LEDs are driven locally by us, so we don't
   -- need to have data for those.)
-  signal mega65_control_data : std_logic_vector(127 downto 0);
-  
+  signal mega65_control_data : unsigned(127 downto 0);
+
+  signal tms_count : unsigned(7 downto 0) := x"00";  
 
 BEGIN
   
@@ -119,6 +120,7 @@ BEGIN
       cnt <= cnt + X"00000001";
 
       if TMS='1' then
+        tms_count <= tms_count + 1;
         serial_data_out <= mega65_ordered_matrix;
         bit_number <= 0;
       else
@@ -142,7 +144,7 @@ BEGIN
       end if;
 
       -- Update PWM LED outputs
-      if cnt(7 downto 0) = x"00" then
+      if to_integer(cnt(7 downto 0)) = 0 then
         LED_SHIFT <= shift_lock;
         LED_CAPS <= caps_lock;
         LED_R0 <= '1';
@@ -158,7 +160,8 @@ BEGIN
         LED_G3 <= '1';
         LED_B3 <= '1';
       else
-        if cnt(7 downto 0) = mega65_control_data(7 downto 0) then
+--        if cnt(7 downto 0) = mega65_control_data(7 downto 0) then
+        if cnt(7 downto 0) = tms_count then
           LED_R0 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(15 downto 8) then
@@ -219,24 +222,23 @@ BEGIN
 --        shift_lock <= shift_lock and SCAN_IN(0);
         case scan_phase is
           when 0 =>
+            mega65_ordered_matrix(7 downto 0) <= SCAN_IN;
             null;
           when 1 =>
+            mega65_ordered_matrix(15 downto 8) <= SCAN_IN;
             null;
           when 2 =>
-            mega65_control_data(7) <= SCAN_IN(0);
-            mega65_control_data(15) <= SCAN_IN(1);
-            mega65_control_data(23) <= SCAN_IN(2);
-            mega65_control_data(31) <= SCAN_IN(3);
-            mega65_control_data(39) <= SCAN_IN(4);
-            mega65_control_data(47) <= SCAN_IN(5);
-            mega65_control_data(55) <= SCAN_IN(6);
-            mega65_control_data(63) <= SCAN_IN(7);            
+            mega65_ordered_matrix(23 downto 16) <= SCAN_IN;
             null;
           when 3 =>
+            mega65_ordered_matrix(31 downto 24) <= SCAN_IN;
             null;
           when 4 =>
+            mega65_ordered_matrix(39 downto 32) <= SCAN_IN;
             null;
           when 5 =>
+            mega65_ordered_matrix(47 downto 40) <= SCAN_IN;
+
             last_caps_lock(0) <= SCAN_IN(0);
             last_caps_lock(7 downto 1) <= last_caps_lock(6 downto 0);
             if (SCAN_IN(0)='0') and (last_caps_lock=x"FF") then
@@ -244,10 +246,15 @@ BEGIN
             end if;
             null;
           when 6 =>
+            mega65_ordered_matrix(55 downto 48) <= SCAN_IN;            
             null;
           when 7 =>
+            mega65_ordered_matrix(63 downto 56) <= SCAN_IN;
             null;
           when 8 =>
+            mega65_ordered_matrix(71 downto 64) <= SCAN_IN;
+
+            
             last_shift_lock(0) <= SCAN_IN(3);
             last_shift_lock(7 downto 1) <= last_shift_lock(6 downto 0);
             if (SCAN_IN(3)='0') and (last_shift_lock=x"FF") then
