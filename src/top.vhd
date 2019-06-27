@@ -143,7 +143,7 @@ BEGIN
         serial_data_out <= mega65_ordered_matrix;
         bit_number <= 0;
       else
-        if last_KIO8 = '0' and KIO8 = '1' then
+        if last_KIO8 = '1' and KIO8 = '0' then
          -- Latch data on rising edge
           if bit_number /= 255 then
             bit_number <= bit_number + 1;
@@ -182,44 +182,42 @@ BEGIN
         LED_B3 <= '1';
       else
         if cnt(7 downto 0) = mega65_control_data(7 downto 0) then
---        if cnt(7 downto 0) = tms_count then
-          LED_R0 <= '0';
+          LED_R2 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(15 downto 8) then
-          LED_G0 <= '0';
+          LED_G2 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(23 downto 16) then
-          LED_B0 <= '0';
+          LED_B2 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(31 downto 24) then
-          LED_R1 <= '0';
+          LED_R3 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(39 downto 32) then
---        if cnt(7 downto 0) = loop_count then
-          LED_G1 <= '0';
+          LED_G3 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(47 downto 40) then
-          LED_B1 <= '0';
+          LED_B3 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(55 downto 48) then
 --        if clock_duration = 31 then
-          LED_R2 <= '0';
+          LED_R0 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(63 downto 56) then
 --        if clock_duration /= 31 then
-          LED_G2 <= '0';
+          LED_G0 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(71 downto 64) then
-          LED_B2 <= '0';
+          LED_B0 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(79 downto 72) then
-          LED_R3 <= '0';
+          LED_R1 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(87 downto 80) then
-          LED_G3 <= '0';
+          LED_G1 <= '0';
         end if;
         if cnt(7 downto 0) = mega65_control_data(95 downto 88) then
-          LED_B3 <= '0';
+          LED_B1 <= '0';
         end if;
       end if;
       
