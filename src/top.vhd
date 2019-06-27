@@ -71,6 +71,7 @@ ARCHITECTURE translated OF top IS
   signal osc_clk: std_logic;
   signal clk: std_logic;
   signal cnt: unsigned(31 downto 0) := x"00000000";
+  signal cnt_idle: unsigned(31 downto 0) := x"00000000";
   
   signal LED_Blink: std_logic;
 
@@ -111,6 +112,9 @@ ARCHITECTURE translated OF top IS
   signal loop_count : unsigned(7 downto 0) := x"00";  
 
   signal clock_duration : integer range 0 to 31 := 0;
+
+  signal kio8_history : std_logic_vector(3 downto 0) := "0000";
+  signal last_last_kio8 : std_logic := '0';
   
 BEGIN
   
@@ -118,7 +122,7 @@ BEGIN
   
   OSCInst0: OSCH
                                         -- synthesis translate_off
-    GENERIC MAP ( NOM_FREQ => "12.09" )
+    GENERIC MAP ( NOM_FREQ => "24.18" )
     
                                         -- synthesis translate_on
     PORT MAP (STDBY=> '0', OSC=> osc_clk, SEDSTDBY=> open);
@@ -127,9 +131,36 @@ BEGIN
   begin
     if (rising_edge(clk)) then
       cnt <= cnt + X"00000001";
+      cnt_idle <= cnt_idle + X"00000001";
 
-      last_KIO8 <= KIO8;
+      kio8_history(0) <= kio8;
+      kio8_history(3 downto 1) <= kio8_history(2 downto 0);
 
+      last_last_kio8 <= last_kio8;
+      if kio8_history(3 downto 0) = "1111" and kio8='1' and last_kio8 = '0' then
+        last_kio8 <= '1';
+      end if;
+      if kio8_history(3 downto 0) = "0000" and kio8='0' and last_kio8 = '1' then
+        last_kio8 <= '0';
+      end if;
+--      kio10 <= last_kio8;
+--      last_KIO8 <= KIO8;
+
+      -- Flash both leds like police lights if no signal from the computer
+      if cnt_idle(31 downto 24) /= x"00" then
+        mega65_control_data <= (others => '0');
+
+        if cnt_idle(23)='1' then
+          -- Red flashes
+          mega65_control_data(1 downto 0) <= (others => cnt_idle(20));
+          mega65_control_data(25 downto 24) <= (others => cnt_idle(20));
+        else
+          -- Blue flashes
+          mega65_control_data(65 downto 64) <= (others => cnt_idle(20));
+          mega65_control_data(89 downto 88) <= (others => cnt_idle(20));
+        end if;
+      end if;
+      
       if KIO8='0' then
         clock_duration <= 0;
       else
@@ -143,7 +174,7 @@ BEGIN
         serial_data_out <= mega65_ordered_matrix;
         bit_number <= 0;
       else
-        if last_KIO8 = '1' and KIO8 = '0' then
+        if last_last_KIO8 = '1' and last_KIO8 = '0' then
          -- Latch data on rising edge
           if bit_number /= 255 then
             bit_number <= bit_number + 1;
@@ -153,6 +184,7 @@ BEGIN
           if bit_number = 128 then
             -- We have 128 bits of data, so latch the whole thing
             mega65_control_data <= serial_data_in;
+            cnt_idle <= x"00000000";
           end if;
 
           -- And push matrix data out
