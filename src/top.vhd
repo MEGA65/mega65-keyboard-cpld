@@ -108,7 +108,6 @@ ARCHITECTURE translated OF top IS
   -- need to have data for those.)
   signal mega65_control_data : unsigned(127 downto 0);
 
-  signal tms_count : unsigned(7 downto 0) := x"00";  
   signal loop_count : unsigned(7 downto 0) := x"00";  
 
   signal clock_duration : integer range 0 to 31 := 0;
@@ -152,12 +151,12 @@ BEGIN
 
         if cnt_idle(23)='1' then
           -- Red flashes
-          mega65_control_data(1 downto 0) <= (others => cnt_idle(20));
-          mega65_control_data(25 downto 24) <= (others => cnt_idle(20));
+          mega65_control_data(7 downto 0) <= (others => cnt_idle(20));
+          mega65_control_data(31 downto 24) <= (others => cnt_idle(20));
         else
           -- Blue flashes
-          mega65_control_data(65 downto 64) <= (others => cnt_idle(20));
-          mega65_control_data(89 downto 88) <= (others => cnt_idle(20));
+          mega65_control_data(71 downto 64) <= (others => cnt_idle(20));
+          mega65_control_data(95 downto 88) <= (others => cnt_idle(20));
         end if;
       end if;
       
@@ -170,20 +169,20 @@ BEGIN
       end if;
       
       if clock_duration = 31 then
-        tms_count <= tms_count + 1;
         serial_data_out <= mega65_ordered_matrix;
         bit_number <= 0;
       else
-        if last_last_KIO8 = '1' and last_KIO8 = '0' then
+        if last_last_KIO8 = '0' and last_KIO8 = '1' then
          -- Latch data on rising edge
           if bit_number /= 255 then
             bit_number <= bit_number + 1;
           end if;
           serial_data_in(127 downto 1) <= serial_data_in(126 downto 0);
           serial_data_in(0) <= KIO9;
-          if bit_number = 128 then
+          if bit_number = 127 then
             -- We have 128 bits of data, so latch the whole thing
-            mega65_control_data <= serial_data_in;
+            mega65_control_data(127 downto 1) <= serial_data_in(126 downto 0);
+            mega65_control_data(0) <= KIO9;
             cnt_idle <= x"00000000";
           end if;
 
@@ -200,56 +199,104 @@ BEGIN
         
         LED_SHIFT <= shift_lock;
         LED_CAPS <= caps_lock;
-        LED_R0 <= '1';
-        LED_G0 <= '1';
-        LED_B0 <= '1';
-        LED_R1 <= '1';
-        LED_G1 <= '1';
-        LED_B1 <= '1';
-        LED_R2 <= '1';
-        LED_G2 <= '1';
-        LED_B2 <= '1';
-        LED_R3 <= '1';
-        LED_G3 <= '1';
-        LED_B3 <= '1';
+        if x"00" /= mega65_control_data(7 downto 0) then
+          LED_R2 <= '0';
+        else
+          LED_R2 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(15 downto 8) then
+          LED_G2 <= '0';
+        else
+          LED_G2 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(23 downto 16) then
+          LED_B2 <= '0';
+        else
+          LED_B2 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(31 downto 24) then
+          LED_R3 <= '0';
+        else
+          LED_R3 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(39 downto 32) then
+          LED_G3 <= '0';
+        else
+          LED_G3 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(47 downto 40) then
+          LED_B3 <= '0';
+        else
+          LED_B3 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(55 downto 48) then
+          LED_R0 <= '0';
+        else
+          LED_R0 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(63 downto 56) then
+          LED_G0 <= '0';
+        else
+          LED_G0 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(71 downto 64) then
+          LED_B0 <= '0';
+        else
+          LED_B0 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(79 downto 72) then
+          LED_R1 <= '0';
+        else
+          LED_R1 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(87 downto 80) then
+          LED_G1 <= '0';
+        else
+          LED_G1 <= '1';
+        end if;
+        if x"00" /= mega65_control_data(95 downto 88) then
+          LED_B1 <= '0';
+        else
+          LED_B1 <= '1';
+        end if;
       else
         if cnt(7 downto 0) = mega65_control_data(7 downto 0) then
-          LED_R2 <= '0';
+          LED_R2 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(15 downto 8) then
-          LED_G2 <= '0';
+          LED_G2 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(23 downto 16) then
-          LED_B2 <= '0';
+          LED_B2 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(31 downto 24) then
-          LED_R3 <= '0';
+          LED_R3 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(39 downto 32) then
-          LED_G3 <= '0';
+          LED_G3 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(47 downto 40) then
-          LED_B3 <= '0';
+          LED_B3 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(55 downto 48) then
 --        if clock_duration = 31 then
-          LED_R0 <= '0';
+          LED_R0 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(63 downto 56) then
 --        if clock_duration /= 31 then
-          LED_G0 <= '0';
+          LED_G0 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(71 downto 64) then
-          LED_B0 <= '0';
+          LED_B0 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(79 downto 72) then
-          LED_R1 <= '0';
+          LED_R1 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(87 downto 80) then
-          LED_G1 <= '0';
+          LED_G1 <= '1';
         end if;
         if cnt(7 downto 0) = mega65_control_data(95 downto 88) then
-          LED_B1 <= '0';
+          LED_B1 <= '1';
         end if;
       end if;
       
