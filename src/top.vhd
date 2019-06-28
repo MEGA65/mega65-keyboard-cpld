@@ -73,19 +73,17 @@ ARCHITECTURE translated OF top IS
   signal cnt: unsigned(31 downto 0) := x"00000000";
   signal cnt_idle: unsigned(31 downto 0) := x"00000000";
   
-  signal LED_Blink: std_logic;
-
   signal last_KIO8 : std_logic := '0';
   signal bit_number : integer range 0 to 255 := 0;
   
   -- The data we are currently shifting in or out serially
   signal serial_data_in : unsigned(127 downto 0) := x"000000000000000000000000FF0000FF";
-  signal serial_data_out : std_logic_vector(71 downto 0) := (others => '1');
+  signal serial_data_out : unsigned(79 downto 0) := (others => '1');
 
   signal scan_phase : integer range 0 to 15 := 0;
   signal scan_out_internal : std_logic_vector(9 downto 0) := "0000000001";
   -- 0 = key down, 1 = key not pressed
-  signal mega65_ordered_matrix : std_logic_vector(71 downto 0) := (others => '1');
+  signal mega65_ordered_matrix : unsigned(79 downto 0) := x"FFFFFFFFFFFFFFFFFFFF";
   -- Then the three keys that have their own dedicated lines
   -- We have enough pins to give them their own dedicated pins, so we will.
   signal key_left_internal : std_logic := '1';
@@ -132,6 +130,12 @@ BEGIN
       cnt <= cnt + X"00000001";
       cnt_idle <= cnt_idle + X"00000001";
 
+      -- Initialisation doesn't seem to work on the lattices, so we have to be
+      -- explicit
+      if cnt = x"00000000" then
+        mega65_ordered_matrix <= x"FFFFFFFFFFFFFFFFFFFF";
+      end if;
+      
       kio8_history(0) <= kio8;
       kio8_history(3 downto 1) <= kio8_history(2 downto 0);
 
@@ -187,9 +191,9 @@ BEGIN
           end if;
 
           -- And push matrix data out
-          serial_data_out(70 downto 0) <= serial_data_out(71 downto 1);
-          serial_data_out(71) <= '1';
-          KIO10 <= serial_data_out(0);        
+          serial_data_out(79 downto 1) <= serial_data_out(78 downto 0);
+          serial_data_out(0) <= '1';
+          KIO10 <= serial_data_out(79);
         end if;
       end if;
 
@@ -320,49 +324,53 @@ BEGIN
         -- We place the scanned keys directly into the MEGA65
         -- matrix layout, so that we can easily clock it out
         -- without further fiddling.
---        shift_lock <= shift_lock and SCAN_IN(0);
         case scan_phase is
           when 0 =>
-            mega65_ordered_matrix(7 downto 0) <= SCAN_IN;
+--            mega65_ordered_matrix(7 downto 0) <= SCAN_IN;            
             null;
           when 1 =>
-            mega65_ordered_matrix(15 downto 8) <= SCAN_IN;
+--            mega65_ordered_matrix(15 downto 8) <= SCAN_IN;
             null;
           when 2 =>
-            mega65_ordered_matrix(23 downto 16) <= SCAN_IN;
+--            mega65_ordered_matrix(23 downto 16) <= SCAN_IN;
             null;
           when 3 =>
-            mega65_ordered_matrix(31 downto 24) <= SCAN_IN;
+--            mega65_ordered_matrix(31 downto 24) <= SCAN_IN;
             null;
           when 4 =>
-            mega65_ordered_matrix(39 downto 32) <= SCAN_IN;
+--            mega65_ordered_matrix(39 downto 32) <= SCAN_IN;
             null;
           when 5 =>
-            mega65_ordered_matrix(47 downto 40) <= SCAN_IN;
+--            mega65_ordered_matrix(47 downto 40) <= SCAN_IN;
 
             last_caps_lock(0) <= SCAN_IN(0);
             last_caps_lock(7 downto 1) <= last_caps_lock(6 downto 0);
             if (SCAN_IN(0)='0') and (last_caps_lock=x"FF") then
               caps_lock <= not caps_lock;
             end if;
+            -- CAPS LOCK has its own separate line, so these exist in positions
+            -- after the whole matrix
+--            mega65_ordered_matrix(72) <= caps_lock;
             null;
           when 6 =>
-            mega65_ordered_matrix(55 downto 48) <= SCAN_IN;            
+--            mega65_ordered_matrix(55 downto 48) <= SCAN_IN;            
             null;
           when 7 =>
-            mega65_ordered_matrix(63 downto 56) <= SCAN_IN;
+--            mega65_ordered_matrix(63 downto 56) <= SCAN_IN;
+--            mega65_ordered_matrix(71) <= SCAN_IN(0);  -- ESC
             null;
           when 8 =>
-            mega65_ordered_matrix(71 downto 64) <= SCAN_IN;
-
-            
+--            mega65_ordered_matrix(71 downto 64) <= SCAN_IN;
             last_shift_lock(0) <= SCAN_IN(3);
             last_shift_lock(7 downto 1) <= last_shift_lock(6 downto 0);
             if (SCAN_IN(3)='0') and (last_shift_lock=x"FF") then
               shift_lock <= not shift_lock;
             end if;
+            mega65_ordered_matrix(15) <= shift_lock;
             null;
           when 9 =>
+--            mega65_ordered_matrix(79 downto 72) <= SCAN_IN;
+--            mega65_ordered_matrix(63) <= SCAN_IN(0);  -- RUN/STOP
             null;
           when others =>
             null;
