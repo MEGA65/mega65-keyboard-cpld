@@ -305,7 +305,7 @@ BEGIN
       end if;
       
       -- Scan keyboard
-      if cnt(4 downto 0) = "00000" then
+      if cnt(5 downto 0) = "000000" then
         -- Rotate through scan sequence
         if scan_phase < 9 then
           scan_phase <= scan_phase + 1;
@@ -319,7 +319,7 @@ BEGIN
           scan_out_internal <= "1111111110";
         end if;        
       end if;
-      if cnt(4 downto 0) = "10000" then
+      if cnt(5 downto 0) = "100000" then
         -- Read scan row after allowing time to settle.
         -- We place the scanned keys directly into the MEGA65
         -- matrix layout, so that we can easily clock it out
