@@ -350,7 +350,7 @@ BEGIN
           when 2 =>
 --            mega65_ordered_matrix(23 downto 16) <= SCAN_IN;
             mega65_ordered_matrix(81-4) <= SCAN_IN(0);  -- F1
-            mega65_ordered_matrix(81-12) <= SCAN_IN(1);  -- A
+            mega65_ordered_matrix(81-24) <= SCAN_IN(1);  -- 7
             mega65_ordered_matrix(81-25) <= SCAN_IN(2);  -- Y
             mega65_ordered_matrix(81-29) <= SCAN_IN(3);  -- H
             mega65_ordered_matrix(81-47) <= SCAN_IN(4);  -- N
@@ -376,37 +376,36 @@ BEGIN
             -- CAPS LOCK has its own separate line, so these exist in positions
             -- after the whole matrix
             mega65_ordered_matrix(81-72) <= not caps_lock;
-            mega65_ordered_matrix(81-10) <= SCAN_IN(1);  -- 
-            mega65_ordered_matrix(81-11) <= SCAN_IN(2);  -- 
-            mega65_ordered_matrix(81-12) <= SCAN_IN(3);  -- 
-            mega65_ordered_matrix(81-13) <= SCAN_IN(4);  -- 
-            mega65_ordered_matrix(81-14) <= SCAN_IN(5);  -- 
-            mega65_ordered_matrix(81-15) <= SCAN_IN(6);  -- 
-            mega65_ordered_matrix(81-16) <= SCAN_IN(7);  -- 
+            mega65_ordered_matrix(81-11) <= SCAN_IN(1);  -- 4
+            mega65_ordered_matrix(81-14) <= SCAN_IN(2);  -- E
+            mega65_ordered_matrix(81-18) <= SCAN_IN(3);  -- D
+            mega65_ordered_matrix(81-20) <= SCAN_IN(4);  -- C
+            mega65_ordered_matrix(81-39) <= SCAN_IN(5);  -- N?
+            mega65_ordered_matrix(81-67) <= SCAN_IN(6);  -- HELP
+            mega65_ordered_matrix(81-1) <= SCAN_IN(7);  -- RETURN
 
             
             null;
           when 6 =>
---            mega65_ordered_matrix(55 downto 48) <= SCAN_IN;            
---            mega65_ordered_matrix(81-66) <= SCAN_IN(0);  -- ALT
---            mega65_ordered_matrix(81-10) <= SCAN_IN(1);  -- 
---            mega65_ordered_matrix(81-11) <= SCAN_IN(2);  -- 
---            mega65_ordered_matrix(81-12) <= SCAN_IN(3);  -- 
---            mega65_ordered_matrix(81-13) <= SCAN_IN(4);  -- 
---            mega65_ordered_matrix(81-14) <= SCAN_IN(5);  -- 
---            mega65_ordered_matrix(81-15) <= SCAN_IN(6);  -- 
---            mega65_ordered_matrix(81-16) <= SCAN_IN(7);  -- 
+            mega65_ordered_matrix(81-66) <= SCAN_IN(0);  -- ALT
+            mega65_ordered_matrix(81-8) <= SCAN_IN(1);  -- 3
+            mega65_ordered_matrix(81-9) <= SCAN_IN(2);  -- W
+            mega65_ordered_matrix(81-13) <= SCAN_IN(3);  -- S
+            mega65_ordered_matrix(81-23) <= SCAN_IN(4);  -- X
+--            mega65_ordered_matrix(81-14) <= SCAN_IN(5);  -- UP KEY
+            mega65_ordered_matrix(81-70) <= SCAN_IN(6);  -- F13
+            mega65_ordered_matrix(81-54) <= SCAN_IN(7);  -- ^
             null;
           when 7 =>
 --            mega65_ordered_matrix(63 downto 56) <= SCAN_IN;
             mega65_ordered_matrix(81-71) <= SCAN_IN(0);  -- ESC
---            mega65_ordered_matrix(81-10) <= SCAN_IN(1);  -- 
---            mega65_ordered_matrix(81-11) <= SCAN_IN(2);  -- 
---            mega65_ordered_matrix(81-12) <= SCAN_IN(3);  -- 
---            mega65_ordered_matrix(81-13) <= SCAN_IN(4);  -- 
---            mega65_ordered_matrix(81-14) <= SCAN_IN(5);  -- 
---            mega65_ordered_matrix(81-15) <= SCAN_IN(6);  -- 
---            mega65_ordered_matrix(81-16) <= SCAN_IN(7);  -- 
+            mega65_ordered_matrix(81-59) <= SCAN_IN(1);  -- 2
+            mega65_ordered_matrix(81-62) <= SCAN_IN(2);  -- Q
+            mega65_ordered_matrix(81-10) <= SCAN_IN(3);  -- A
+            mega65_ordered_matrix(81-12) <= SCAN_IN(4);  -- Z
+            mega65_ordered_matrix(81-52) <= SCAN_IN(5);  -- RIGHT SHIFT
+            mega65_ordered_matrix(81-69) <= SCAN_IN(6);  -- F11
+            mega65_ordered_matrix(81-49) <= SCAN_IN(7);  -- *
             null;
           when 8 =>
 --            mega65_ordered_matrix(71 downto 64) <= SCAN_IN;
@@ -416,13 +415,13 @@ BEGIN
               shift_lock <= not shift_lock;
             end if;
             mega65_ordered_matrix(81-15) <= not shift_lock;
---            mega65_ordered_matrix(81-10) <= SCAN_IN(1);  -- 
---            mega65_ordered_matrix(81-11) <= SCAN_IN(2);  -- 
---            mega65_ordered_matrix(81-12) <= SCAN_IN(3);  -- 
---            mega65_ordered_matrix(81-13) <= SCAN_IN(4);  -- 
---            mega65_ordered_matrix(81-14) <= SCAN_IN(5);  -- 
---            mega65_ordered_matrix(81-15) <= SCAN_IN(6);  -- 
---            mega65_ordered_matrix(81-16) <= SCAN_IN(7);  -- 
+            mega65_ordered_matrix(81-10) <= SCAN_IN(1);  -- 
+            mega65_ordered_matrix(81-11) <= SCAN_IN(2);  -- 
+            mega65_ordered_matrix(81-12) <= SCAN_IN(3);  -- 
+            mega65_ordered_matrix(81-13) <= SCAN_IN(4);  -- 
+            mega65_ordered_matrix(81-14) <= SCAN_IN(5);  -- 
+            mega65_ordered_matrix(81-15) <= SCAN_IN(6);  -- 
+            mega65_ordered_matrix(81-16) <= SCAN_IN(7);  -- 
             null;
           when 9 =>
 --            mega65_ordered_matrix(79 downto 72) <= SCAN_IN;
