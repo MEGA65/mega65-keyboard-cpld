@@ -327,18 +327,22 @@ BEGIN
         case scan_phase is
           when 0 =>
 --            mega65_ordered_matrix(7 downto 0) <= SCAN_IN;            
+            mega65_ordered_matrix(81-6) <= SCAN_IN(0);  -- F5
             null;
           when 1 =>
 --            mega65_ordered_matrix(15 downto 8) <= SCAN_IN;
+            mega65_ordered_matrix(81-5) <= SCAN_IN(0);  -- F3
             null;
           when 2 =>
 --            mega65_ordered_matrix(23 downto 16) <= SCAN_IN;
+            mega65_ordered_matrix(81-4) <= SCAN_IN(0);  -- F1
             null;
           when 3 =>
 --            mega65_ordered_matrix(31 downto 24) <= SCAN_IN;
             null;
           when 4 =>
 --            mega65_ordered_matrix(39 downto 32) <= SCAN_IN;
+            mega65_ordered_matrix(81-64) <= SCAN_IN(0);  -- NO SCROLL
             null;
           when 5 =>
 --            mega65_ordered_matrix(47 downto 40) <= SCAN_IN;
@@ -350,14 +354,15 @@ BEGIN
             end if;
             -- CAPS LOCK has its own separate line, so these exist in positions
             -- after the whole matrix
---            mega65_ordered_matrix(72) <= caps_lock;
+            mega65_ordered_matrix(81-72) <= not caps_lock;
             null;
           when 6 =>
 --            mega65_ordered_matrix(55 downto 48) <= SCAN_IN;            
+            mega65_ordered_matrix(81-66) <= SCAN_IN(0);  -- ALT
             null;
           when 7 =>
 --            mega65_ordered_matrix(63 downto 56) <= SCAN_IN;
---            mega65_ordered_matrix(71) <= SCAN_IN(0);  -- ESC
+            mega65_ordered_matrix(81-71) <= SCAN_IN(0);  -- ESC
             null;
           when 8 =>
 --            mega65_ordered_matrix(71 downto 64) <= SCAN_IN;
@@ -366,11 +371,11 @@ BEGIN
             if (SCAN_IN(3)='0') and (last_shift_lock=x"FF") then
               shift_lock <= not shift_lock;
             end if;
-            mega65_ordered_matrix(15) <= shift_lock;
+            mega65_ordered_matrix(81-15) <= not shift_lock;
             null;
           when 9 =>
 --            mega65_ordered_matrix(79 downto 72) <= SCAN_IN;
---            mega65_ordered_matrix(63) <= SCAN_IN(0);  -- RUN/STOP
+            mega65_ordered_matrix(81-63) <= SCAN_IN(0);  -- RUN/STOP
             null;
           when others =>
             null;
