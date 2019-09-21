@@ -388,6 +388,10 @@ BEGIN
             if (SCAN_IN(0)='0') and (last_caps_lock=x"FF") then
               caps_lock <= not caps_lock;
             end if;
+            -- Also expose CAPS LOCK key directly, so that it can be used to
+            -- enable 40MHz CPU while held down.
+            mega65_ordered_matrix(81-78) <= SCAN_IN(0);
+            
             -- CAPS LOCK has its own separate line, so these exist in positions
             -- after the whole matrix
             mega65_ordered_matrix(81-72) <= not caps_lock;
@@ -395,7 +399,6 @@ BEGIN
             mega65_ordered_matrix(81-14) <= SCAN_IN(2);  -- E
             mega65_ordered_matrix(81-18) <= SCAN_IN(3);  -- D
             mega65_ordered_matrix(81-20) <= SCAN_IN(4);  -- C
---            mega65_ordered_matrix(81-39) <= SCAN_IN(5);  -- 
             mega65_ordered_matrix(81-67) <= SCAN_IN(6);  -- HELP
             mega65_ordered_matrix(81-1) <= SCAN_IN(7);  -- RETURN
             mega65_ordered_matrix(81-77) <= SCAN_IN(7);  -- RETURN
@@ -429,7 +432,6 @@ BEGIN
               shift_lock <= not shift_lock;
             end if;
             mega65_ordered_matrix(81-56) <= SCAN_IN(1);  -- 1
-            mega65_ordered_matrix(81-12) <= SCAN_IN(0);  -- ??
             mega65_ordered_matrix(81-15) <= SCAN_IN(4) and (not shift_lock);  -- LEFT
                                                                               -- SHIFT
                                                                               -- and LOCK
