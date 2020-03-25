@@ -382,14 +382,14 @@ BEGIN
           when 5 =>
             last_caps_lock(0) <= SCAN_IN(0);
             last_caps_lock(7 downto 1) <= last_caps_lock(6 downto 0);
-            if last_caps_lock = x"FF" then
+            if last_caps_lock = x"00" then
               -- If caps lock is being held down for a long time for CPU speed
               -- control, then automatically re-invert it so that the user doesn't
               -- need to do so themselves.
-              if caps_lock_hold_time < (1*1048576) then
+              if caps_lock_hold_time < (1*1024) then
                 caps_lock_hold_time <= caps_lock_hold_time + 1;
               end if;
-              if caps_lock_hold_time = (1*1048576 - 2) then
+              if caps_lock_hold_time = (1*1024 - 2) then
                 caps_lock <= not caps_lock;
               end if;
             else
