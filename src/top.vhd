@@ -84,11 +84,6 @@ ARCHITECTURE translated OF top IS
   signal scan_out_internal : std_logic_vector(9 downto 0) := "0000000001";
   -- 0 = key down, 1 = key not pressed
   signal mega65_ordered_matrix : unsigned(81 downto 0);
-  -- Then the three keys that have their own dedicated lines
-  -- We have enough pins to give them their own dedicated pins, so we will.
-  signal key_left_internal : std_logic := '1';
-  signal key_up_internal : std_logic := '1';
-  signal key_restore_internal : std_logic := '1';  
 
   -- Track state of shift lock and caps lock keys locally
   -- (Again, 1 = not active, 0 = active)
@@ -112,6 +107,8 @@ ARCHITECTURE translated OF top IS
 
   signal kio8_history : std_logic_vector(3 downto 0) := "0000";
   signal last_last_kio8 : std_logic := '0';
+
+  signal caps_lock_hold_time : integer  range 0 to (4*1048576-1) := 0;
   
 BEGIN
   
@@ -385,6 +382,19 @@ BEGIN
           when 5 =>
             last_caps_lock(0) <= SCAN_IN(0);
             last_caps_lock(7 downto 1) <= last_caps_lock(6 downto 0);
+            if last_caps_lock = x"FF" then
+              -- If caps lock is being held down for a long time for CPU speed
+              -- control, then automatically re-invert it so that the user doesn't
+              -- need to do so themselves.
+              if caps_lock_hold_time < (1*1048576) then
+                caps_lock_hold_time <= caps_lock_hold_time + 1;
+              end if;
+              if caps_lock_hold_time = (1*1048576 - 2) then
+                caps_lock <= not caps_lock;
+              end if;
+            else
+              caps_lock_hold_time <= 0;
+            end if;
             if (SCAN_IN(0)='0') and (last_caps_lock=x"FF") then
               caps_lock <= not caps_lock;
             end if;
