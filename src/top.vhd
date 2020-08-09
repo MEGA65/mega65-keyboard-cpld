@@ -146,14 +146,21 @@ BEGIN
 --      kio10 <= last_kio8;
 --      last_KIO8 <= KIO8;
 
-      -- Flash both leds like police lights if no signal from the computer
+      -- Flash both leds like ambulance lights if no signal from the computer
       if cnt_idle(31 downto 24) /= x"00" then
         mega65_control_data <= (others => '0');
 
+        -- XXX For R3 PCB, we have back-flow current via HDMI, which has enough
+        -- voltage to cause the red LEDs to be able to light (and to power this
+        -- entire CPLD!). To hide this, we will make ambulance mode have only
+        -- blue LED flashing.
         if cnt_idle(23)='1' then
           -- Red flashes
-          mega65_control_data(7 downto 0) <= (others => cnt_idle(20));
-          mega65_control_data(31 downto 24) <= (others => cnt_idle(20));
+          -- mega65_control_data(7 downto 0) <= (others => cnt_idle(20));
+          -- mega65_control_data(31 downto 24) <= (others => cnt_idle(20));
+          -- Blue flashes
+          mega65_control_data(23 downto 16) <= (others => cnt_idle(20));
+          mega65_control_data(47 downto 40) <= (others => cnt_idle(20));
         else
           -- Blue flashes
           mega65_control_data(71 downto 64) <= (others => cnt_idle(20));
