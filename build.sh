@@ -7,3 +7,5 @@ export FOUNDRY=/usr/local/lscc/diamond/1.3/ispFPGA
 export PATH=$FOUNDRY/bin/nt:$PATH
 ./version.sh
 ${DIAMONDDIR}/bin/lin64/diamondc build.tcl | tee build.log
+
+tar zcvf mega65-kbd-cpld-`cat version.txt`.tgz impl1

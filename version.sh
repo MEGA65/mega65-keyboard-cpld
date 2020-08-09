@@ -7,6 +7,8 @@ branch2=${branch:3:6}
 version=`git describe --always --abbrev=8`
 datestamp=$(expr $(expr $(date +%Y) - 2020) \* 366 + `date +%j`)
 
+echo ${datestamp}-${version} > version.txt
+
 echo $datestamp $version
 cat > src/version.vhdl <<ENDTEMPLATE
 library ieee;

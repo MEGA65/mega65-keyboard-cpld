@@ -178,8 +178,14 @@ BEGIN
       
       if clock_duration = 31 then
         serial_data_out(127 downto 46) <= mega65_ordered_matrix;
+        -- We send bits in reverse order, so put date and version in backwards
         serial_data_out(45 downto 32) <= git_date;
-        serial_data_out(31 downto 0) <= git_version;
+        for i in 0 to 13 loop
+          serial_data_out(32 + i) <= git_date(13 - i);
+        end loop;
+        for i in 0 to 31 loop
+          serial_data_out(i) <= git_version(31 - i);
+        end loop;
         bit_number <= 0;
         KIO10 <= '1';
       else
