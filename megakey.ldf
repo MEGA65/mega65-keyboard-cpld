@@ -6,6 +6,9 @@
         <Source name="src/top.vhd" type="VHDL" type_short="VHDL">
             <Options top_module="top"/>
         </Source>
+        <Source name="src/version.vhdl" type="VHDL" type_short="VHDL">
+            <Options top_module="top"/>
+        </Source>
         <Source name="impl1/impl1.xcf" type="Programming Project File" type_short="Programming">
             <Options/>
         </Source>

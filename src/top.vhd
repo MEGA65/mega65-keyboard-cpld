@@ -6,7 +6,7 @@ use ieee.numeric_std.all;
 
 library machxo2;
 use machxo2.all;
-
+use work.version.all;
 
 ENTITY top IS
   PORT (
@@ -78,7 +78,7 @@ ARCHITECTURE translated OF top IS
   
   -- The data we are currently shifting in or out serially
   signal serial_data_in : unsigned(127 downto 0) := x"000000000000000000000000FF0000FF";
-  signal serial_data_out : unsigned(81 downto 0) := (others => '1');
+  signal serial_data_out : unsigned(127 downto 0) := (others => '1');
 
   signal scan_phase : integer range 0 to 15 := 0;
   signal scan_out_internal : std_logic_vector(9 downto 0) := "0000000001";
@@ -177,7 +177,9 @@ BEGIN
       end if;
       
       if clock_duration = 31 then
-        serial_data_out <= mega65_ordered_matrix;
+        serial_data_out(127 downto 46) <= mega65_ordered_matrix;
+        serial_data_out(45 downto 32) <= git_date;
+        serial_data_out(31 downto 0) <= git_version;
         bit_number <= 0;
         KIO10 <= '1';
       else
@@ -198,9 +200,9 @@ BEGIN
           -- And push matrix data out
           -- (And at the same time dealing with our funny time delay problem
           -- which is why we read from element 79, but have 81 in the loop.)
-          serial_data_out(81 downto 1) <= serial_data_out(80 downto 0);
-          serial_data_out(0) <= serial_data_out(81);
-          KIO10 <= serial_data_out(79);
+          serial_data_out(127 downto 1) <= serial_data_out(126 downto 0);
+          serial_data_out(0) <= serial_data_out(127);
+          KIO10 <= serial_data_out(125);
         end if;
       end if;
 
