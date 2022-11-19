@@ -51,8 +51,6 @@ END ENTITY top;
 --
 ARCHITECTURE translated OF top IS
   
-  --GENERIC (NOM_FREQ: string := "24.18");
-  
   COMPONENT OSCH
     -- synthesis translate_off
     GENERIC (NOM_FREQ: string := "12.09");
@@ -64,7 +62,6 @@ ARCHITECTURE translated OF top IS
 
   attribute NOM_FREQ : string;
   
---attribute NOM_FREQ of OSCinst0 : label is "24.18";
   attribute NOM_FREQ of OSCinst0 : label is "12.09";
 
 
@@ -116,7 +113,7 @@ BEGIN
   
   OSCInst0: OSCH
                                         -- synthesis translate_off
-    GENERIC MAP ( NOM_FREQ => "24.18" )
+    GENERIC MAP ( NOM_FREQ => "12.09" )
     
                                         -- synthesis translate_on
     PORT MAP (STDBY=> '0', OSC=> osc_clk, SEDSTDBY=> open);
